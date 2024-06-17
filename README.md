@@ -6,22 +6,22 @@ This project aims to simulate RNA-seq data with specific differential expression
 ## Project Structure
 
 .
-├── data
-│   ├── c2.cp.kegg_medicus.v2023.2.Hs.json
-│   └── genome
-│       └── gencode.v38.transcripts.fa
-├── doc
-│   └── environment.yml
-├── indexed_gset.ipynb
-├── License
-├── output
-│   └── gene_sets_with_indices.tsv
-├── README.md
-├── scripts
-│   ├── rnaseq_simulation.R
-│   ├── submit_simulation_EXAMPLE.sh
-│   └── submit_simulation.sh
-└── simulate_RNAseq.Rmd
+├── data  
+│   ├── c2.cp.kegg_medicus.v2023.2.Hs.json  
+│   └── genome  
+│       └── gencode.v38.transcripts.fa  
+├── doc   
+│   └── environment.yml  
+├── indexed_gset.ipynb  
+├── License   
+├── output  
+│   └── gene_sets_with_indices.tsv  
+├── README.md  
+├── scripts  
+│   ├── rnaseq_simulation.R   
+│   ├── submit_simulation_EXAMPLE.sh  
+│   └── submit_simulation.sh  
+└── simulate_RNAseq.Rmd 
 
 
 ## Requirements
@@ -74,7 +74,7 @@ Use `rnaseq_simulation.Rmd` or the R script `rnaseq_simulation.R` in the `script
 5. Create a fold changes matrix.
 6. Simulate the RNA-seq experiment with specified replicates and fold changes.
 
-### Step 3 [OPTIONAL]: Run on Server
+### [OPTIONAL]: Run on Server
 
 Use the `submit_simulation.sh` script in the `scripts` directory to submit the job to the server:
 1. From `scripts` directory: submit the job using the command: `sbatch submit_simulation.sh`
