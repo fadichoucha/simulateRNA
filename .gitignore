@@ -1,0 +1,17 @@
+data/genome/
+
+output/simulated_rnaseq_data/
+submit_simulation.sh
+
+
+
+# Other ignores
+.Rhistory
+.RData
+.Rproj.user/
+__pycache__/
+*.py[cod]
+
+*.log
+*.out
+*.err

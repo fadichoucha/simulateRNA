@@ -1,0 +1,9 @@
+name: rnaseq_simulation
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base
+  - r-dplyr
+  - bioconductor-biostrings
+  - r-essentials

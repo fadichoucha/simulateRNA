@@ -1,0 +1,114 @@
+```{r warning=FALSE}
+library(dplyr)
+library(polyester)
+library(Biostrings)
+```
+
+```{r}
+# Read the TSV file
+gene_sets <- read.table('./data/gene_sets_with_indices.tsv', header=TRUE, sep='\t')
+head(gene_sets)
+```
+
+```{r}
+# Define fold change values for each gene set
+fc_values <- list(
+  M47362 = 0.5,  
+  M47501 = 0.5,    
+  M47365 = 1,     
+  M47478 = 1,  
+  M47412 = 3,     
+  M47419 = 5,     
+  M47422 = 5,     
+  M47425 = 10,    
+  M47450 = 10,  
+  M47452 = 20   
+)
+```
+
+# Add LogFC value to geneset
+```{r}
+# Create fold change table for each gene
+set.seed(123) 
+STN <- 0.1
+
+logfc_table <- gene_sets %>%
+  group_by(gene_set) %>%
+  mutate(fc = runif(n(), fc_values[[unique(gene_set)]] - STN, fc_values[[unique(gene_set)]] + STN))
+
+write.table(logfc_table, file = './data/logfc_table.tsv', sep = '\t', row.names = FALSE, quote = FALSE)
+
+head(logfc_table, 100)
+
+```
+
+
+```{r}
+# Load the FASTA sequences
+fasta_file <- './data/gencode.v38.transcripts.fa'
+fasta_sequences <- readDNAStringSet(fasta_file)
+
+# Create a fold changes matrix
+num_genes <- length(fasta_sequences)
+num_groups <- 2 # Case and control
+fold_changes <- matrix(1, nrow=num_genes, ncol=num_groups)
+
+# Update fold changes for the genes in the logfc_table
+for (i in 1:nrow(logfc_table)) {
+  gene_index <- logfc_table$index[i]
+  fc <- logfc_table$fc[i]
+  print(gene_index)
+  print(num_genes)
+  if(gene_index <= num_genes) {
+    fold_changes[gene_index, 1] <- fc # Case group
+    fold_changes[gene_index, 2] <- 1  # Control group (no change)
+  }
+}
+
+print(head(fold_changes))
+```
+
+```{r}
+# Check the fold_changes matrix for updated values
+updated_indices <- which(fold_changes[, 1] != 1)
+print(fold_changes[updated_indices, ])
+```
+
+
+```{r}
+# Verify fold_changes matrix dimensions
+dim(fold_changes)
+```
+
+
+```{r}
+reads_per_transcript <- rep(300, num_genes)  # Default 300
+
+# Ensure the reads_per_transcript length is correct
+if (length(reads_per_transcript) != num_genes) {
+  stop("reads_per_transcript length does not match the number of genes")
+}
+```
+
+
+# Simulation
+```{r}
+# Simulate RNA-seq experiment
+num_reps <- 5
+
+simulate_experiment(
+  fasta = fasta_file,
+  num_reps = c(num_reps, num_reps), 
+  fold_changes = fold_changes,
+  reads_per_transcript = reads_per_transcript,
+  # meanmodel=TRUE,
+  outdir = './output/simulated_rnaseq_data',
+  paired = TRUE
+)
+
+# Verify the simulation
+simulated_files <- list.files('./data/simulated_rnaseq_data', full.names = TRUE)
+print(simulated_files)
+```
+
+
