@@ -1,6 +1,7 @@
 data/genome/
+DGE/
 
-output/simulated_rnaseq_data/
+output/simulated_rnaseq_*
 submit_simulation.sh
 
 

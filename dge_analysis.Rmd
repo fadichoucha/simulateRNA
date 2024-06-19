@@ -1,0 +1,186 @@
+---
+title: "DGE"
+author: "fadi"
+date: "2024-06-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+install.packages(c("ggplot2", "pheatmap", "RColorBrewer"))
+BiocManager::install(c("DESeq2", "EnhancedVolcano"))
+```
+
+```{r message=FALSE, warning=FALSE}
+# Load required libraries
+library(DESeq2)
+library(ggplot2)
+library(pheatmap)
+library(RColorBrewer)
+library(EnhancedVolcano)
+
+```
+
+```{r}
+project_dir <- "./output/simulated_rnaseq_data_1run/"
+
+# Load the count matrix and metadata
+load(paste0(project_dir, "sim_counts_matrix.rda"))
+metadata <- read.table(paste0(project_dir, "sim_rep_info.txt"), header = TRUE, sep = "\t")
+
+
+# Ensure that 'group' is a factor
+metadata$group <- factor(metadata$group, levels = c("treatment", "control"))
+
+# Create DESeqDataSet
+dds <- DESeqDataSetFromMatrix(countData = counts_matrix, colData = metadata, design = ~ group)
+
+```
+
+```{r}
+write.table(counts_matrix, file = paste0(project_dir, "counts_matrix.tsv"), sep = "\t", row.names = TRUE, col.names = TRUE)
+```
+
+
+# Perform exploratory data analysis (EDA)
+```{r}
+# 1. Summary of the count matrix
+summary(counts_matrix)
+```
+
+
+```{r}
+# 2. Visualize the distribution of counts
+hist(log10(counts_matrix + 1), breaks = 100, main = "Log10 Counts Distribution", xlab = "Log10(Counts + 1)")
+```
+
+```{r}
+# 3. PCA plot to visualize sample relationships
+vsd <- vst(dds, blind = FALSE)
+pcaData <- plotPCA(vsd, intgroup = "group", returnData = TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+ggplot(pcaData, aes(PC1, PC2, color = group)) +
+  geom_point(size = 3) +
+  xlab(paste0("PC1: ", percentVar[1], "% variance")) +
+  ylab(paste0("PC2: ", percentVar[2], "% variance")) +
+  ggtitle("PCA Plot")
+```
+
+
+```{r}
+# 4. Heatmap of the sample-to-sample distances
+sampleDists <- dist(t(assay(vsd)))
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- vsd$group
+colnames(sampleDistMatrix) <- vsd$group
+colors <- colorRampPalette(rev(brewer.pal(9, "Blues")))(255)
+pheatmap(sampleDistMatrix, clustering_distance_rows = sampleDists, clustering_distance_cols = sampleDists, col = colors)
+
+```
+
+
+```{r}
+# Perform differential gene expression analysis
+dds <- DESeq(dds)
+```
+
+```{r}
+res <- results(dds)
+```
+
+
+```{r}
+# Save DGE results as a TSV file
+write.table(res, file = paste0(project_dir, "DGE_results.tsv"), sep = "\t", quote = FALSE, col.names = NA)
+```
+
+
+```{r}
+# Visualize the DGE results
+# 1. MA plot
+plotMA(res, main = "MA Plot", ylim = c(-5, 5))
+
+```
+
+```{r}
+# 2. Volcano plot
+  EnhancedVolcano(res,
+                  lab = NA, #rownames(res),
+                  x = 'log2FoldChange',
+                  y = 'pvalue',
+                  title = '',
+                  pCutoff = 10e-32,
+                  FCcutoff = 0.5,
+                  pointSize = 3.0,
+                  labSize = 6.0)
+```
+
+# Gene set Anlaysis
+```{r}
+# Visualize DGE for a group of genes (gene sets M47450)
+gene_set <- c(
+            "CREBBP",
+            "EP300",
+            "IFNB1",
+            "IKBKE",
+            "IRF3",
+            "TBK1",
+            "TICAM1",
+            "TLR3",
+            "TRAF3"
+)
+subset_res <- res[rownames(res) %in% gene_set, ]
+write.table(subset_res, file = paste0(project_dir, "DGE_gene_set.tsv"), sep = "\t", quote = FALSE, col.names = NA)
+
+
+```
+
+
+
+```{r}
+# Heatmap for the gene set
+gene_counts <- assay(vsd)[rownames(vsd) %in% gene_set, ]
+pheatmap(gene_counts, cluster_rows = TRUE, cluster_cols = TRUE, show_rownames = TRUE, show_colnames = TRUE)
+
+```
+
+
+```{r}
+# Boxplot for the gene set
+gene_counts_melt <- melt(gene_counts)
+colnames(gene_counts_melt) <- c("Gene", "Sample", "Expression")
+ggplot(gene_counts_melt, aes(x = Gene, y = Expression, fill = metadata$group[gene_counts_melt$Sample])) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Gene Expression Boxplot", x = "Gene", y = "Expression")
+```
+
+```{r}
+# Save session info for reproducibility
+writeLines(capture.output(sessionInfo()), "sessionInfo.txt")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

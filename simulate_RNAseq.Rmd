@@ -6,7 +6,7 @@ library(Biostrings)
 
 ```{r}
 # Read the TSV file
-gene_sets <- read.table('./data/gene_sets_with_indices.tsv', header=TRUE, sep='\t')
+gene_sets <- read.table('./output/gene_sets_with_indices.tsv', header=TRUE, sep='\t')
 head(gene_sets)
 ```
 
@@ -32,20 +32,20 @@ fc_values <- list(
 set.seed(123) 
 STN <- 0.1
 
-logfc_table <- gene_sets %>%
+fc_table <- gene_sets %>%
   group_by(gene_set) %>%
   mutate(fc = runif(n(), fc_values[[unique(gene_set)]] - STN, fc_values[[unique(gene_set)]] + STN))
 
-write.table(logfc_table, file = './data/logfc_table.tsv', sep = '\t', row.names = FALSE, quote = FALSE)
+write.table(fc_table, file = './output/fc_table.tsv', sep = '\t', row.names = FALSE, quote = FALSE)
 
-head(logfc_table, 100)
+head(fc_table, 100)
 
 ```
 
 
 ```{r}
 # Load the FASTA sequences
-fasta_file <- './data/gencode.v38.transcripts.fa'
+fasta_file <- './data/genome/gencode.v38.transcripts.fa'
 fasta_sequences <- readDNAStringSet(fasta_file)
 
 # Create a fold changes matrix
@@ -53,16 +53,12 @@ num_genes <- length(fasta_sequences)
 num_groups <- 2 # Case and control
 fold_changes <- matrix(1, nrow=num_genes, ncol=num_groups)
 
-# Update fold changes for the genes in the logfc_table
-for (i in 1:nrow(logfc_table)) {
-  gene_index <- logfc_table$index[i]
-  fc <- logfc_table$fc[i]
-  print(gene_index)
-  print(num_genes)
-  if(gene_index <= num_genes) {
-    fold_changes[gene_index, 1] <- fc # Case group
-    fold_changes[gene_index, 2] <- 1  # Control group (no change)
-  }
+# Update fold changes for the genes in the fc_table
+for (i in 1:nrow(fc_table)) {
+  gene_index <- fc_table$index[i]
+  fc <- fc_table$fc[i]
+  fold_changes[gene_index, 1] <- fc # Case group
+  fold_changes[gene_index, 2] <- 1  # Control group (no change)
 }
 
 print(head(fold_changes))
@@ -103,11 +99,11 @@ simulate_experiment(
   reads_per_transcript = reads_per_transcript,
   # meanmodel=TRUE,
   outdir = './output/simulated_rnaseq_data',
-  paired = TRUE
+  paired = FALSE
 )
 
 # Verify the simulation
-simulated_files <- list.files('./data/simulated_rnaseq_data', full.names = TRUE)
+simulated_files <- list.files('./output/simulated_rnaseq_data', full.names = TRUE)
 print(simulated_files)
 ```
 

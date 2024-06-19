@@ -6,13 +6,16 @@ suppressWarnings(library(Biostrings))
 
 #-------------------------------------------------------------
 gene_sets_file <- '../output/gene_sets_with_indices.tsv'
-output_logfc_table <- '../output/logfc_table.tsv'
 fasta_file <- '../data/genome/gencode.v38.transcripts.fa'
-output_dir <- '../output/simulated_rnaseq_data'
+output_dir <- '../output/simulated_rnaseq_data_300'
+output_fc_table <- '../output/simulated_rnaseq_data_300/fc_table.tsv'
+
+
 set_seed <- 123
-STN <- 0.1
-num_reps <- 5
+STN <- 0.2
+num_reps <- 3
 reads_per_transcript_count <- 300
+paired_reads = FALSE
 
 # Define fold change values for each gene set
 fc_values <- list(
@@ -33,14 +36,14 @@ fc_values <- list(
 # Read the TSV file
 gene_sets <- read.table(gene_sets_file, header=TRUE, sep='\t')
 
-# Add LogFC value to geneset
+# Add FC value to geneset
 set.seed(set_seed)
 
-logfc_table <- gene_sets %>%
+fc_table <- gene_sets %>%
   group_by(gene_set) %>%
   mutate(fc = runif(n(), fc_values[[unique(gene_set)]] - STN, fc_values[[unique(gene_set)]] + STN))
 
-write.table(logfc_table, file = output_logfc_table, sep = '\t', row.names = FALSE, quote = FALSE)
+write.table(fc_table, file = output_fc_table, sep = '\t', row.names = FALSE, quote = FALSE)
 
 # Load the FASTA sequences
 fasta_sequences <- readDNAStringSet(fasta_file)
@@ -50,16 +53,12 @@ num_genes <- length(fasta_sequences)
 num_groups <- 2 
 fold_changes <- matrix(1, nrow=num_genes, ncol=num_groups)
 
-# Update fold changes for the genes in the logfc_table
-for (i in 1:nrow(logfc_table)) {
-  gene_index <- logfc_table$index[i]
-  fc <- logfc_table$fc[i]
-  print(gene_index)
-  print(num_genes)
-  if(gene_index <= num_genes) {
-    fold_changes[gene_index, 1] <- fc # Case group
-    fold_changes[gene_index, 2] <- 1  # Control group (no change)
-  }
+# Update fold changes for the genes in the fc_table
+for (i in 1:nrow(fc_table)) {
+  gene_index <- fc_table$index[i]
+  fc <- fc_table$fc[i]
+  fold_changes[gene_index, 1] <- fc # Case group
+  fold_changes[gene_index, 2] <- 1  # Control group (no change)
 }
 
 
@@ -75,9 +74,10 @@ simulate_experiment(
   fasta = fasta_file,
   num_reps = c(num_reps, num_reps), 
   fold_changes = fold_changes,
-  reads_per_transcript = reads_per_transcript,
+  reads_per_transcript = reads_per_transcript, # None if meanmodel
+  #meanmodel=TRUE,
   outdir = output_dir,
-  paired = TRUE
+  paired = paired_reads
 )
 
 # Verify the simulation
