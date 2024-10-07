@@ -5,25 +5,18 @@ suppressWarnings(library(polyester))
 suppressWarnings(library(Biostrings))
 
 #-------------------------------------------------------------
-gene_sets_file <- '../output/gene_sets_with_indices.tsv'
+gene_sets_file <- '../output/gene_sets_with_indices__M47495_M47605_M47715.tsv'
 fasta_file <- '../data/genome/gencode.v38.transcripts.fa'
-output_dir <- '../output/simulated_rnaseq_data_300'
-output_fc_table <- '../output/simulated_rnaseq_data_300/fc_table.tsv'
+output_dir <- '../output/simulated_rnaseq_data_7oct2024'
+output_fc_table <- '../output/simulated_rnaseq_data_7oct2024/fc_table.tsv'
 
 
 #----------------------------------------------------------
 # Define fold change values for each gene set
 fc_values <- list(
-  M47362 = 0.5,  
-  M47501 = 0.5,    
-  M47365 = 1,     
-  M47478 = 1,  
-  M47412 = 3,     
-  M47419 = 5,     
-  M47422 = 5,     
-  M47425 = 10,    
-  M47450 = 10,  
-  M47452 = 20   
+  M47495 = 5,  
+  M47605 = 15,    
+  M47715 = 10
 )
 #----------------------------------------------------------
 
@@ -32,7 +25,7 @@ fc_values <- list(
 set_seed <- 123
 STN <- 0.2
 num_reps <- 3
-reads_per_transcript_count <- 300
+reads_per_transcript_count <- 50
 paired_reads = FALSE
 
 
@@ -46,7 +39,9 @@ set.seed(set_seed)
 
 fc_table <- gene_sets %>%
   group_by(gene_set) %>%
-  mutate(fc = runif(n(), fc_values[[unique(gene_set)]] - STN, fc_values[[unique(gene_set)]] + STN))
+  # mutate(fc = runif(n(), fc_values[[unique(gene_set)]] - STN, fc_values[[unique(gene_set)]] + STN))  
+  mutate(fc = fc_values[[unique(gene_set)]]) # This is more speedy
+
 
 write.table(fc_table, file = output_fc_table, sep = '\t', row.names = FALSE, quote = FALSE)
 
@@ -79,8 +74,13 @@ simulate_experiment(
   fasta = fasta_file,
   num_reps = c(num_reps, num_reps), 
   fold_changes = fold_changes,
-  reads_per_transcript = reads_per_transcript, # None if meanmodel
-  #meanmodel=TRUE,
+  # reads_per_transcript = reads_per_transcript, # None if meanmodel
+  meanmodel=TRUE,
+  readlength = 75,
+  fastq = FALSE,
+  gc_bias = FALSE,
+  num_cores = parallel::detectCores() - 1,
+  seed = set_seed,
   outdir = output_dir,
   paired = paired_reads
 )
